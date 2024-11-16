@@ -94,9 +94,7 @@ const ProfilePage = () => {
                   <div className="w-32 rounded-full relative group/avatar">
                     <img
                       src={
-                        profileImg ||
-                        user?.profileImg ||
-                        "/avatar-placeholder.png"
+                        profileImg || user?.profileImg || "/default-avatar.png"
                       }
                     />
                     <div className="absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer">
