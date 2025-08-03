@@ -1,12 +1,12 @@
 import XSvg from "../svgs/X";
 
-import { MdHomeFilled } from "react-icons/md";
-import { IoNotifications } from "react-icons/io5";
-import { FaUser } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import { BiLogOut } from "react-icons/bi";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { BiLogOut, BiSolidMessageSquareDetail } from "react-icons/bi";
+import { FaUser } from "react-icons/fa";
+import { IoNotifications } from "react-icons/io5";
+import { MdHomeFilled } from "react-icons/md";
+import { Link } from "react-router-dom";
 
 const Sidebar = () => {
   const queryClient = useQueryClient();
@@ -68,6 +68,16 @@ const Sidebar = () => {
             >
               <FaUser className="w-6 h-6" />
               <span className="text-lg hidden md:block">Profile</span>
+            </Link>
+          </li>
+
+          <li className="flex justify-center md:justify-start">
+            <Link
+              to={`/messages`}
+              className="flex gap-3 items-center hover:bg-stone-900 transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+            >
+              <BiSolidMessageSquareDetail className="w-6 h-6" />
+              <span className="text-lg hidden md:block">Messages</span>
             </Link>
           </li>
         </ul>

@@ -1,5 +1,5 @@
 import express from "express";
-import { protectRoute } from "../middlewares/productRoute.js";
+import { protectRoute } from "../middlewares/protectRoute.js";
 import {
   commentOnPost,
   createPost,

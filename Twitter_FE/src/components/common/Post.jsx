@@ -9,6 +9,7 @@ import { formatPostDate } from "./../../utils/date/index";
 import LoadingSpinner from "./LoadingSpinner";
 
 const Post = ({ post }) => {
+  console.log(post);
   const [comment, setComment] = useState("");
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
   const queryClient = useQueryClient();
