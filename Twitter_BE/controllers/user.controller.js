@@ -149,3 +149,31 @@ export const updateUser = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+export const searchUsers = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || query.trim() === "") {
+    return res.status(400).json({ message: "Missing search query" });
+  }
+
+  try {
+    const regex = new RegExp(query, "i"); // case-insensitive
+
+    const users = await User.find({
+      $and: [
+        {
+          $or: [{ username: regex }, { fullName: regex }],
+        },
+        {
+          _id: { $ne: req.user._id },
+        },
+      ],
+    }).select("_id username fullName profileImg");
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

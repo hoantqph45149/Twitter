@@ -9,7 +9,7 @@ import {
   addParticipants,
   removeParticipant,
 } from "../controllers/conversation.controller.js";
-import protectRoute from "../middlewares/protectRoute.js";
+import { protectRoute } from "../middlewares/protectRoute.js";
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.use(protectRoute);
 router.get("/", getAllConversations);
 router.get("/:id", getConversationById);
 router.post("/", createConversation);
-router.put("/:id/seen", markLastSeen);
+router.put("/:id/last-seen", markLastSeen);
 router.put("/:id/typing", toggleTypingStatus);
 router.put("/:id/mute", muteConversation);
 router.put("/:id/participants", addParticipants);

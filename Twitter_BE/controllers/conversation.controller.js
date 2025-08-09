@@ -2,71 +2,105 @@ import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 
-// Lấy tất cả conversation của user
 export const getAllConversations = async (req, res) => {
   const userId = req.user._id;
 
-  const conversations = await Conversation.find({
-    participants: { $elemMatch: { user: userId } },
-  })
-    .populate("lastMessage")
-    .populate("participants.user", "username avatar")
-    .populate("admins", "username");
+  try {
+    const conversations = await Conversation.find({
+      participants: { $elemMatch: { user: userId } },
+    })
+      .populate({
+        path: "participants.user",
+        select: "username fullName profileImg",
+      })
+      .populate({
+        path: "admins",
+        select: "username fullName profileImg",
+      })
+      .populate("lastMessage")
+      .sort({ updatedAt: -1 });
 
-  res.json(conversations);
+    res.json({ success: true, data: conversations });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Lấy chi tiết một conversation
 export const getConversationById = async (req, res) => {
   const { id } = req.params;
 
-  const conversation = await Conversation.findById(id)
-    .populate("lastMessage")
-    .populate("participants.user", "username avatar")
-    .populate("admins", "username");
+  try {
+    const conversation = await Conversation.findById(id)
+      .populate("lastMessage")
+      .populate("participants.user", "username")
+      .populate("admins", "username");
 
-  res.json(conversation);
+    if (!conversation) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Conversation not found" });
+    }
+
+    res.json({ success: true, data: conversation });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Tạo mới một cuộc trò chuyện (group hoặc 1-1)
 export const createConversation = async (req, res) => {
   const { isGroup, name, participants } = req.body;
 
   if (!participants || participants.length < 2) {
-    return res.status(400).json({ error: "Phải có ít nhất 2 người" });
+    return res
+      .status(400)
+      .json({ success: false, error: "Phải có ít nhất 2 người" });
   }
 
-  const newConversation = new Conversation({
-    name: isGroup ? name : undefined,
-    isGroup,
-    participants: participants.map((u) => ({ user: u })),
-    admins: isGroup ? [req.user._id] : [],
-  });
+  try {
+    const newConversation = new Conversation({
+      name: isGroup ? name : undefined,
+      isGroup,
+      participants: participants.map((u) => ({ user: u })),
+      admins: isGroup ? [req.user._id] : [],
+    });
 
-  await newConversation.save();
-  res.status(201).json(newConversation);
+    await newConversation.save();
+    res.status(201).json({ success: true, data: newConversation });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Đánh dấu đã xem
 export const markLastSeen = async (req, res) => {
   const { id } = req.params;
   const { messageId } = req.body;
+  const io = req.app.get("io");
 
-  await Conversation.updateOne(
-    { _id: id, "participants.user": req.user._id },
-    { $set: { "participants.$.lastSeenMessage": messageId } }
-  );
+  try {
+    await Conversation.updateOne(
+      { _id: id, "participants.user": req.user._id },
+      { $set: { "participants.$.lastSeenMessage": messageId } }
+    );
 
-  res.json({ success: true });
+    // Emit last seen update to conversation room
+    io.to(`conversation_${id}`).emit("last_seen_updated", {
+      userId: req.user._id,
+      messageId,
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Gửi trạng thái đang gõ
 export const toggleTypingStatus = async (req, res) => {
   const { id } = req.params;
   const { isTyping } = req.body;
+  const io = req.app.get("io");
 
-  // Emit qua socket
-  req.io.to(`conversation_${id}`).emit("typing", {
+  // Emit typing status to conversation room
+  io.to(`conversation_${id}`).emit("typing", {
     userId: req.user._id,
     isTyping,
   });
@@ -74,52 +108,69 @@ export const toggleTypingStatus = async (req, res) => {
   res.json({ success: true });
 };
 
-// Mute cuộc trò chuyện
 export const muteConversation = async (req, res) => {
   const { id } = req.params;
   const { mute } = req.body;
 
-  await Conversation.updateOne(
-    { _id: id, "participants.user": req.user._id },
-    { $set: { "participants.$.isMuted": mute } }
-  );
+  try {
+    await Conversation.updateOne(
+      { _id: id, "participants.user": req.user._id },
+      { $set: { "participants.$.isMuted": mute } }
+    );
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Thêm thành viên vào nhóm
 export const addParticipants = async (req, res) => {
   const { id } = req.params;
   const { newUserIds } = req.body;
 
-  const conversation = await Conversation.findById(id);
+  try {
+    const conversation = await Conversation.findById(id);
 
-  if (!conversation || !conversation.isGroup) {
-    return res.status(400).json({ error: "Không phải group" });
+    if (!conversation || !conversation.isGroup) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Không phải group" });
+    }
+
+    const currentIds = conversation.participants.map((p) => p.user.toString());
+    const uniqueNewUsers = newUserIds.filter((id) => !currentIds.includes(id));
+
+    const newParticipants = uniqueNewUsers.map((userId) => ({
+      user: userId,
+    }));
+
+    conversation.participants.push(...newParticipants);
+    await conversation.save();
+
+    res.json({ success: true, data: conversation });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
-
-  const currentIds = conversation.participants.map((p) => p.user.toString());
-  const uniqueNewUsers = newUserIds.filter((id) => !currentIds.includes(id));
-
-  const newParticipants = uniqueNewUsers.map((userId) => ({
-    user: userId,
-  }));
-
-  conversation.participants.push(...newParticipants);
-  await conversation.save();
-
-  res.json(conversation);
 };
 
-// Xoá thành viên
 export const removeParticipant = async (req, res) => {
   const { id, userId } = req.params;
 
-  const conversation = await Conversation.findByIdAndUpdate(
-    id,
-    { $pull: { participants: { user: userId } } },
-    { new: true }
-  );
+  try {
+    const conversation = await Conversation.findByIdAndUpdate(
+      id,
+      { $pull: { participants: { user: userId } } },
+      { new: true }
+    );
 
-  res.json(conversation);
+    if (!conversation) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Conversation not found" });
+    }
+
+    res.json({ success: true, data: conversation });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };

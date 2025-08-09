@@ -1,58 +1,127 @@
+import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
+import { io, onlineUsers } from "../socket/socket.js";
 
-// Gửi tin nhắn mới
 export const sendMessage = async (req, res) => {
-  const { conversationId } = req.params;
-  const { content, media, replyTo } = req.body;
+  const { receiverId, content, media, replyTo } = req.body;
   const senderId = req.user._id;
 
-  const message = await Message.sendMessage({
-    conversationId,
-    senderId,
-    content,
-    media,
-    replyTo,
-  });
+  try {
+    // B1: Tìm conversation giữa 2 user (đã tạo chưa?)
+    let conversation = await Conversation.findOne({
+      "participants.user": { $all: [senderId, receiverId] },
+    });
 
-  res.status(201).json({ success: true, data: message });
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [{ user: senderId }, { user: receiverId }],
+      });
+    }
+    // B3: Tạo message gắn với conversation đó
+    let message = await Message.create({
+      conversationId: conversation._id,
+      senderId,
+      content,
+      media,
+      replyTo,
+    });
+    message = await message.populate("senderId", "fullName profileImg");
+    // B4: Cập nhật lastMessage trong Conversation
+    conversation.lastMessage = message._id;
+    await conversation.save();
+
+    // B5: Emit cho cả phòng conversation đó
+
+    const memberIds = conversation.participants.map((p) => p.user.toString());
+    memberIds.forEach((userId) => {
+      if (userId === senderId.toString()) return;
+      const socketSet = onlineUsers.get(userId);
+      if (!socketSet) return;
+
+      socketSet.forEach((socketId) => {
+        io.to(socketId).emit("new_message", message);
+      });
+    });
+
+    res.status(201).json({ success: true, data: message });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Lấy danh sách tin nhắn trong 1 cuộc trò chuyện
 export const getMessages = async (req, res) => {
   const { conversationId } = req.params;
 
-  const messages = await Message.getMessages(conversationId);
-
-  res.status(200).json({ success: true, data: messages });
+  try {
+    const messages = await Message.find({ conversationId })
+      .populate("senderId", "username fullName profileImg")
+      .populate("replyTo");
+    res.status(200).json({ success: true, data: messages });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Đánh dấu tin nhắn đã xem
 export const markAsSeen = async (req, res) => {
   const { conversationId } = req.params;
   const userId = req.user._id;
 
-  const updated = await Message.markAsSeen(conversationId, userId);
+  try {
+    const updated = await Message.updateMany(
+      { conversationId, seenBy: { $ne: userId } },
+      { $addToSet: { seenBy: userId } }
+    );
 
-  res.status(200).json({ success: true, data: updated });
+    // Emit seen event to conversation room
+    io.to(`conversation_${conversationId}`).emit("messages_seen", { userId });
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Xoá tin nhắn cho chính mình
 export const deleteMessageForUser = async (req, res) => {
   const { messageId } = req.params;
   const userId = req.user._id;
 
-  await Message.deleteMessageForUser(messageId, userId);
+  try {
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Message not found" });
+    }
 
-  res.status(200).json({ success: true, message: "Message deleted for user" });
+    message.deletedFor = message.deletedFor || [];
+    message.deletedFor.push(userId);
+    await message.save();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Message deleted for user" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
-// Gỡ tin nhắn (xoá toàn bộ)
 export const deleteMessageCompletely = async (req, res) => {
   const { messageId } = req.params;
 
-  await Message.deleteMessageCompletely(messageId);
+  try {
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Message not found" });
+    }
 
-  res
-    .status(200)
-    .json({ success: true, message: "Message deleted completely" });
+    await Message.deleteOne({ _id: messageId });
+
+    res
+      .status(200)
+      .json({ success: true, message: "Message deleted completely" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };

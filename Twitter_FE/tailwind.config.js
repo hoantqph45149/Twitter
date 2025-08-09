@@ -4,7 +4,17 @@ import daisyUIThemes from "daisyui/src/theming/themes";
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        wave: {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.5" },
+          "50%": { transform: "scale(1.5)", opacity: "1" },
+        },
+      },
+      animation: {
+        wave: "wave 1s ease-in-out infinite",
+      },
+    },
   },
   plugins: [daisyui],
 

@@ -29,7 +29,7 @@ const LoginPage = () => {
         });
 
         const data = await res.json();
-
+        console.log(data);
         if (!res.ok) {
           throw new Error(data.error || "Something went wrong");
         }
@@ -38,7 +38,7 @@ const LoginPage = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      queryClient.invalidateQueries({ queryKey: ["authUser"] }, {});
     },
   });
 
