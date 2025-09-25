@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
 import { IoSettingsOutline } from "react-icons/io5";
+import { fetchWithAuth } from "../../services/fetchInstance";
 
 const NotificationPage = () => {
   const queryClient = useQueryClient();
@@ -14,7 +15,7 @@ const NotificationPage = () => {
     queryKey: ["notifications"],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/notifications");
+        const res = await fetchWithAuth("/api/notifications");
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || "Something went wrong");
@@ -30,7 +31,7 @@ const NotificationPage = () => {
   const { mutate: deleteNotifications } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch("/api/notifications", {
+        const res = await fetchWithAuth("/api/notifications", {
           method: "DELETE",
         });
         const data = res.json();

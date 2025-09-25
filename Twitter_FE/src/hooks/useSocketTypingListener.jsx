@@ -9,9 +9,7 @@ export default function useSocketTypingListener({
   useEffect(() => {
     if (!socket || !authUser?._id) return;
     const handleTyping = ({ conversationId: typingConvId, user }) => {
-      console.log("typingConvId", typingConvId);
       if (typingConvId === conversationId && user._id !== authUser._id) {
-        console.log("User is typing:", user.fullName);
         setTyping({
           isTyping: true,
           conversationId: typingConvId,
@@ -22,7 +20,6 @@ export default function useSocketTypingListener({
 
     const handleStopTyping = ({ conversationId: stopTypingConvId, user }) => {
       if (stopTypingConvId === conversationId && user._id !== authUser._id) {
-        console.log("User stopped typing:", user);
         setTyping({
           isTyping: false,
           conversationId: stopTypingConvId,

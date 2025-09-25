@@ -16,8 +16,11 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "./../../hooks/useFollow";
+import { fetchWithAuth } from "../../services/fetchInstance";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 const ProfilePage = () => {
+  const { authUser } = useAuthContext();
   const [coverImg, setCoverImg] = useState(null);
   const [profileImg, setProfileImg] = useState(null);
   const [feedType, setFeedType] = useState("posts");
@@ -36,7 +39,7 @@ const ProfilePage = () => {
     queryKey: ["userProfile"],
     queryFn: async () => {
       try {
-        const res = await fetch(`/api/users/profile/${username}`);
+        const res = await fetchWithAuth(`/api/users/profile/${username}`);
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || "Something went wrong");
@@ -48,8 +51,6 @@ const ProfilePage = () => {
       }
     },
   });
-
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
   const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
 

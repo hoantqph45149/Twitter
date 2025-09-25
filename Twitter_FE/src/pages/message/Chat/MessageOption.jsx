@@ -1,12 +1,13 @@
+import { memo } from "react";
 import {
-  FiMoreHorizontal,
-  FiCornerUpLeft,
   FiCopy,
+  FiCornerUpLeft,
+  FiMoreHorizontal,
   FiRotateCcw,
   FiTrash2,
 } from "react-icons/fi";
 
-export default function MessageOptions({
+function MessageOptions({
   message,
   messageOptionsId,
   setMessageOptionsId,
@@ -70,3 +71,4 @@ export default function MessageOptions({
     </div>
   );
 }
+export default memo(MessageOptions);

@@ -6,15 +6,18 @@ import { BiLogOut, BiSolidMessageSquareDetail } from "react-icons/bi";
 import { FaUser } from "react-icons/fa";
 import { IoNotifications } from "react-icons/io5";
 import { MdHomeFilled } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { fetchWithAuth } from "../../services/fetchInstance";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 const Sidebar = () => {
+  const { authUser, setAuthUser } = useAuthContext();
   const queryClient = useQueryClient();
-
+  const nav = useNavigate();
   const { mutate: logoutMutate } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch("/api/auth/logout", {
+        const res = await fetchWithAuth("/api/auth/logout", {
           method: "POST",
         });
         const data = await res.json();
@@ -26,14 +29,15 @@ const Sidebar = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      setAuthUser(null);
+      queryClient.clear();
+      nav("/login", { replace: true });
     },
-    onError: () => {
+    onError: (error) => {
+      console.log(error);
       toast.error("Logout failed");
     },
   });
-
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
   return (
     <div className="md:flex-[2_2_0] w-18 max-w-52">

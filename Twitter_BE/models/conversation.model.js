@@ -22,6 +22,11 @@ const conversationSchema = new mongoose.Schema(
       },
     ],
 
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     admins: [
       {
         type: mongoose.Schema.Types.ObjectId,

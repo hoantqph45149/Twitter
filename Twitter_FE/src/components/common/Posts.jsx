@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import PostSkeleton from "../skeletons/PostSkeleton";
 import Post from "./Post";
 import { useEffect } from "react";
+import { fetchWithAuth } from "../../services/fetchInstance";
 
 const Posts = ({ feedType, username, userId }) => {
   const getPostEndpoint = () => {
@@ -30,7 +31,7 @@ const Posts = ({ feedType, username, userId }) => {
     queryKey: ["posts"],
     queryFn: async () => {
       try {
-        const res = await fetch(POST_ENDPOINT);
+        const res = await fetchWithAuth(POST_ENDPOINT);
         const data = await res.json();
 
         if (!res.ok) {

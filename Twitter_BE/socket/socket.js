@@ -26,9 +26,16 @@ io.on("connection", (socket) => {
 
   console.log("🟢 User online:", userId, "| socket:", socket.id);
 
+  io.emit("onlineUsers", Array.from(onlineUsers.keys()));
+
+  socket.on("joinRoom", (conversationId) => {
+    socket.join(conversationId);
+    console.log(`User ${socket.id} joined room ${conversationId}`);
+  });
+
   socket.on("typing", async ({ conversationId, user }) => {
     if (!conversationId || !user) return;
-    console.log("typing", conversationId, user);
+    // console.log("typing", conversationId, user);
     try {
       const conversation = await Conversation.findById(conversationId);
       if (!conversation) return;
@@ -50,7 +57,7 @@ io.on("connection", (socket) => {
   // Khi ngừng gõ
   socket.on("stopTyping", async ({ conversationId, user }) => {
     if (!conversationId || !userId) return;
-    console.log("stopTyping", conversationId, user);
+    // console.log("stopTyping", conversationId, user);
     try {
       const conversation = await Conversation.findById(conversationId);
       if (!conversation) return;
@@ -78,6 +85,9 @@ io.on("connection", (socket) => {
         console.log("🔴 User offline:", userId);
       }
     }
+
+    // 👉 Emit lại danh sách user online cho tất cả client
+    io.emit("onlineUsers", Array.from(onlineUsers.keys()));
   });
 });
 

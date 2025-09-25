@@ -18,12 +18,37 @@ const messageSchema = new mongoose.Schema(
     },
     media: [
       {
-        type: String, // link ảnh, video,...
+        url: { type: String, required: true },
+        type: {
+          type: String,
+          enum: [
+            "image",
+            "video",
+            "file",
+            "audio",
+            "pdf",
+            "doc",
+            "xls",
+            "ppt",
+            "other",
+            "zip",
+            "rar",
+            "raw",
+          ],
+          required: true,
+        },
+        fileName: { type: String }, // Tên file gốc
+        size: { type: Number }, // Kích thước file (byte)
       },
     ],
     call: {
-      type: String,
-      enum: ["video", "audio", "missed", "ended"],
+      type: {
+        type: String,
+        enum: ["video", "audio", "missed", "ended"],
+      },
+      duration: { type: Number }, // Thời lượng cuộc gọi (giây)
+      startedAt: { type: Date }, // Thời gian bắt đầu
+      endedAt: { type: Date }, // Thời gian kết thúc
     },
     seenBy: [
       {

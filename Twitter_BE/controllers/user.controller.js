@@ -2,6 +2,7 @@ import bcryptjs from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
 import Notification from "../models/notification.model.js";
 import User from "../models/user.model.js";
+import Conversation from "../models/conversation.model.js";
 export const getUserProfile = async (req, res) => {
   const { username } = req.params;
   try {
@@ -150,28 +151,54 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const searchUsers = async (req, res) => {
-  const { query } = req.query;
+export const searchUsersAndGroups = async (req, res) => {
+  const { query, page = 1, limit = 10 } = req.query;
 
   if (!query || query.trim() === "") {
     return res.status(400).json({ message: "Missing search query" });
   }
 
   try {
-    const regex = new RegExp(query, "i"); // case-insensitive
+    const regex = new RegExp(query, "i");
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const users = await User.find({
+    // Tìm user (trừ bản thân)
+    const userFilters = {
       $and: [
-        {
-          $or: [{ username: regex }, { fullName: regex }],
-        },
-        {
-          _id: { $ne: req.user._id },
-        },
+        { $or: [{ username: regex }, { fullName: regex }] },
+        { _id: { $ne: req.user._id } },
       ],
-    }).select("_id username fullName profileImg");
+    };
 
-    res.status(200).json(users);
+    const users = await User.find(userFilters)
+      .select("_id username fullName profileImg")
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalUsers = await User.countDocuments(userFilters);
+
+    const groupFilters = {
+      isGroup: true,
+      name: regex,
+      participants: { $elemMatch: { user: req.user._id } },
+    };
+
+    const groups = await Conversation.find(groupFilters)
+      .select("_id name isGroup participants")
+      .populate("participants.user", "_id username fullName profileImg");
+
+    const totalGroups = await Conversation.countDocuments(groupFilters);
+
+    res.status(200).json({
+      users,
+      groups,
+      pagination: {
+        totalUsers,
+        totalGroups,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
   } catch (error) {
     console.error("Search error:", error);
     res.status(500).json({ message: "Server error" });

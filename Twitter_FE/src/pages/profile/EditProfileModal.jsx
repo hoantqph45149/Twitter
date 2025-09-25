@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import Modal from "../../components/common/Modal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
-const EditProfileModal = ({ authUser }) => {
+const EditProfileButton = ({ authUser }) => {
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -43,87 +44,88 @@ const EditProfileModal = ({ authUser }) => {
       >
         Edit profile
       </button>
-      <dialog id="edit_profile_modal" className="modal">
-        <div className="modal-box border rounded-md border-gray-700 shadow-md">
-          <h3 className="font-bold text-lg my-3">Update Profile</h3>
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
+
+      <Modal
+        id="edit_profile_modal"
+        title="Update Profile"
+        footer={
+          <button
+            className="btn btn-primary rounded-full btn-sm text-white"
+            onClick={(e) => {
               e.preventDefault();
               updateProfile(formData);
             }}
           >
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="text"
-                placeholder="Full Name"
-                className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.fullName}
-                name="fullName"
-                onChange={handleInputChange}
-              />
-              <input
-                type="text"
-                placeholder="Username"
-                className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.username}
-                name="username"
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="email"
-                placeholder="Email"
-                className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.email}
-                name="email"
-                onChange={handleInputChange}
-              />
-              <textarea
-                placeholder="Bio"
-                className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.bio}
-                name="bio"
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="password"
-                placeholder="Current Password"
-                className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.currentPassword}
-                name="currentPassword"
-                onChange={handleInputChange}
-              />
-              <input
-                type="password"
-                placeholder="New Password"
-                className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.newPassword}
-                name="newPassword"
-                onChange={handleInputChange}
-              />
-            </div>
+            {isUpdatingProfile ? <LoadingSpinner size="sm" /> : "Update"}
+          </button>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
             <input
               type="text"
-              placeholder="Link"
+              placeholder="Full Name"
               className="flex-1 input border border-gray-700 rounded p-2 input-md"
-              value={formData.link}
-              name="link"
+              value={formData.fullName}
+              name="fullName"
               onChange={handleInputChange}
             />
-            <button className="btn btn-primary rounded-full btn-sm text-white">
-              {isUpdatingProfile ? <LoadingSpinner size="sm" /> : "Update"}
-            </button>
-          </form>
+            <input
+              type="text"
+              placeholder="Username"
+              className="flex-1 input border border-gray-700 rounded p-2 input-md"
+              value={formData.username}
+              name="username"
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="email"
+              placeholder="Email"
+              className="flex-1 input border border-gray-700 rounded p-2 input-md"
+              value={formData.email}
+              name="email"
+              onChange={handleInputChange}
+            />
+            <textarea
+              placeholder="Bio"
+              className="flex-1 input border border-gray-700 rounded p-2 input-md"
+              value={formData.bio}
+              name="bio"
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="password"
+              placeholder="Current Password"
+              className="flex-1 input border border-gray-700 rounded p-2 input-md"
+              value={formData.currentPassword}
+              name="currentPassword"
+              onChange={handleInputChange}
+            />
+            <input
+              type="password"
+              placeholder="New Password"
+              className="flex-1 input border border-gray-700 rounded p-2 input-md"
+              value={formData.newPassword}
+              name="newPassword"
+              onChange={handleInputChange}
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="Link"
+            className="flex-1 input border border-gray-700 rounded p-2 input-md"
+            value={formData.link}
+            name="link"
+            onChange={handleInputChange}
+          />
         </div>
-        <form method="dialog" className="modal-backdrop">
-          <button className="outline-none">close</button>
-        </form>
-      </dialog>
+      </Modal>
     </>
   );
 };
-export default EditProfileModal;
+
+export default EditProfileButton;

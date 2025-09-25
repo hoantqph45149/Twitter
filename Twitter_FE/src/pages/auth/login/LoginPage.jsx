@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MdOutlineMail, MdPassword } from "react-icons/md";
 import { Link } from "react-router-dom";
 import XSvg from "../../../components/svgs/X";
+import { fetchWithAuth } from "../../../services/fetchInstance";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ const LoginPage = () => {
   } = useMutation({
     mutationFn: async ({ username, password }) => {
       try {
-        const res = await fetch("/api/auth/login", {
+        const res = await fetchWithAuth("/api/auth/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -29,7 +30,6 @@ const LoginPage = () => {
         });
 
         const data = await res.json();
-        console.log(data);
         if (!res.ok) {
           throw new Error(data.error || "Something went wrong");
         }

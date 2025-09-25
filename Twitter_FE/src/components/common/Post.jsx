@@ -7,11 +7,13 @@ import { FaRegBookmark } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import { formatPostDate } from "./../../utils/date/index";
 import LoadingSpinner from "./LoadingSpinner";
+import { fetchWithAuth } from "../../services/fetchInstance";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 const Post = ({ post }) => {
-  console.log(post);
   const [comment, setComment] = useState("");
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuthContext();
+
   const queryClient = useQueryClient();
 
   const postOwner = post.user;
@@ -22,7 +24,7 @@ const Post = ({ post }) => {
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch(`/api/posts/${post._id}`, {
+        const res = await fetchWithAuth(`/api/posts/${post._id}`, {
           method: "DELETE",
         });
         const data = await res.json();
@@ -45,7 +47,7 @@ const Post = ({ post }) => {
   const { mutate: likePost, isPending: isLiking } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch(`/api/posts/like/${post._id}`, {
+        const res = await fetchWithAuth(`/api/posts/like/${post._id}`, {
           method: "POST",
         });
         const data = await res.json();
@@ -75,7 +77,7 @@ const Post = ({ post }) => {
   const { mutate: commentPost, isPending: isCommenting } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch(`/api/posts/comment/${post._id}`, {
+        const res = await fetchWithAuth(`/api/posts/comment/${post._id}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

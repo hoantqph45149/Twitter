@@ -1,22 +1,21 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchWithAuth } from "../services/fetchInstance";
 
 export default function useConversations() {
-  const [conversations, setConversations] = useState([]);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/conversations");
+      if (!res.ok) throw new Error("Failed to fetch conversations");
+      const json = await res.json();
+      return json.data;
+    },
+  });
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        fetch("/api/conversations")
-          .then((response) => response.json())
-          .then((data) => {
-            setConversations(data.data);
-          });
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
-      }
-    };
-    fetchConversations();
-  }, []);
-
-  return { conversations, setConversations };
+  return {
+    conversations: data || [],
+    isLoading,
+    isError,
+    refetch,
+  };
 }
