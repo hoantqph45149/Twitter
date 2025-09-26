@@ -1,5 +1,6 @@
+const apiUrl = import.meta.env.VITE_API_URL;
 export async function fetchWithAuth(url, options) {
-  const res = await fetch(url, {
+  const res = await fetch(`${apiUrl}${url}`, {
     ...options,
     credentials: "include",
   });

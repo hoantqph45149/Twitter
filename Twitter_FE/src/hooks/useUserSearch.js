@@ -1,15 +1,29 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import axios from "axios";
 import useDebounce from "./useDebounce";
+import { fetchWithAuth } from "../services/fetchInstance";
 
 const fetchUsers = async ({ pageParam = 1, queryKey }) => {
   const [, query] = queryKey;
   if (!query) return { users: [], pagination: { totalPages: 0 } };
 
-  const res = await axios.get("/api/users/search", {
-    params: { query, page: pageParam, limit: 5 },
+  const urlParams = new URLSearchParams({
+    query,
+    page: pageParam,
+    limit: 5,
+  }).toString();
+  const res = await fetchWithAuth(`/api/users/search?${urlParams}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
-  return res.data;
+
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data;
 };
 
 export default function useUserSearch(search) {

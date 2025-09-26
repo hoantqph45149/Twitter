@@ -1,28 +1,40 @@
-import { HiX } from "react-icons/hi";
-import { FiSearch } from "react-icons/fi";
 import {
   useInfiniteQuery,
   useMutation,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useState, useRef, useEffect } from "react";
-import axios from "axios";
-import useDebounce from "../../hooks/useDebounce";
-import LoadingSpinner from "./LoadingSpinner";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import AvatarChat from "./AvatarChat";
-import { fetchWithAuth } from "../../services/fetchInstance";
+import { FiSearch } from "react-icons/fi";
+import { HiX } from "react-icons/hi";
 import { useAuthContext } from "../../contexts/AuthContext";
+import useDebounce from "../../hooks/useDebounce";
+import { fetchWithAuth } from "../../services/fetchInstance";
+import AvatarChat from "./AvatarChat";
+import LoadingSpinner from "./LoadingSpinner";
 
 const fetchUsers = async ({ pageParam = 1, queryKey }) => {
   const [, query] = queryKey;
   if (!query) return { users: [], pagination: { totalPages: 0 } };
 
-  const res = await axios.get("/api/users/search", {
-    params: { query, page: pageParam, limit: 5 },
+  const urlParams = new URLSearchParams({
+    query,
+    page: pageParam,
+    limit: 5,
+  }).toString();
+  const res = await fetchWithAuth(`/api/users/search?${urlParams}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
-  return res.data;
+
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data;
 };
 
 function useUserSearch(search) {
@@ -72,12 +84,12 @@ export default function CreateGroupModal({
       if (!nameGroup.trim() || selectedUsers.length === 0) {
         throw new Error("Group name and members are required");
       }
-      const res = await axios.post("/api/conversations", {
+      const data = await fetchWithAuth("/api/conversations", {
         name: nameGroup,
         isGroup: true,
         participants: selectedUsers.map((user) => user._id),
       });
-      return res.data;
+      return data;
     },
     onSuccess: (data) => {
       onClose();
